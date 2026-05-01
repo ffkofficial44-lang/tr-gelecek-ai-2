@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI System Interface</title>
+    
+    <style>
+        /* Modern ve Karanlık Tasarım */
+        :root { --bg: #121212; --msg-user: #2c2c2e; --msg-admin: #007aff; --input: #1c1c1e; --text: #f2f2f7; --sub-text: #8e8e93; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; font-size: 16px; overflow: hidden; }
+        
+        /* Mesaj Alanı */
+        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
+        .msg-row { display: flex; animation: slideIn 0.3s ease; }
+        .msg-row.user { justify-content: flex-start; }
+        .msg-row.admin { justify-content: flex-end; }
+        .msg { padding: 10px 14px; border-radius: 18px; max-width: 80%; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; }
+        
+        /* Kullanıcı (Kurban) Stili */
+        .msg-row.user .msg { background: var(--msg-user); color: var(--text); border-bottom-left-radius: 4px; }
+        /* Senin (Admin/AI) Stilin */
+        .msg-row.admin .msg { background: var(--msg-admin); color: white; border-bottom-right-radius: 4px; box-shadow: 0 2px 5px rgba(0,122,255,0.2); }
+        
+        /* Giriş Alanı */
+        .input-bar { padding: 10px; background: var(--input); border-top: 1px solid #333; display: flex; gap: 10px; align-items: center; position: fixed; bottom: 0; width: 100%; height: 60px; z-index: 100; }
+        input { flex: 1; padding: 11px 16px; border-radius: 20px; border: none; background: #2c2c2e; color: var(--text); outline: none; font-size: 15px; }
+        input::placeholder { color: var(--sub-text); }
+        button { background: var(--msg-admin); color: white; border: none; padding: 11px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: opacity 0.2s; font-size: 15px; }
+        button:active { opacity: 0.7; }
+        @keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        #chat { padding-bottom: 75px; } /* Giriş barının mesajları kapatmaması için */
+    </style>
+</head>
+<body>
+
+    <div id="chat">
+        </div>
+    
+    <div class="input-bar">
+        <input type="text" id="msgInput" placeholder="Mesajınızı yazın..." autocomplete="off">
+        <button id="sendBtn">Gönder</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, push, set, onChildAdded } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+        // Senin güncel (fac7a) bilgilerin:
+        const firebaseConfig = {
+            apiKey: "AIzaSyAW-HC08psjB1ftH-EffGyswLRZ13O8KtY",
+            authDomain: "global-chat-fac7a.firebaseapp.com",
+            projectId: "global-chat-fac7a",
+            storageBucket: "global-chat-fac7a.firebasestorage.app",
+            messagingSenderId: "1058623951778",
+            appId: "1:1058623951778:web:8e71710b3c4482071698fb",
+            databaseURL: "https://global-chat-fac7a-default-rtdb.firebaseio.com"
+        };
+
+        // Firebase'i Başlat
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const sohbetRef = ref(db, 'sohbet_odasi');
+
+        const input = document.getElementById("msgInput");
+        const sendBtn = document.getElementById("sendBtn");
+        const chatBox = document.getElementById("chat");
+
+        // Mesaj Gönderme
+        function send() {
+            const text = input.value.trim();
+            const role = window.location.hash === "#admin" ? "admin" : "user";
+            
+            if(text !== "") {
+                const yeniMesajRef = push(sohbetRef);
+                set(yeniMesajRef, {
+                    text: text,
+                    role: role,
+                    timestamp: Date.now()
+                }).then(() => {
+                    input.value = "";
+                }).catch((error) => {
+                    console.error("Mesaj gönderilemedi:", error);
+                    alert("Hata! Firebase bağlantısı kurulamadı. Rules kısmını true yaptığından emin ol.");
+                });
+            }
+        }
+
+        sendBtn.onclick = send;
+        input.onkeypress = (e) => { if(e.key === "Enter") send(); };
+
+        // Mesajları Dinle
+        onChildAdded(sohbetRef, (snap) => {
+            const data = snap.val();
+            const rowDiv = document.createElement("div");
+            rowDiv.className = "msg-row " + data.role;
+            const msgDiv = document.createElement("div");
+            msgDiv.className = "msg";
+            msgDiv.innerText = data.text;
+            rowDiv.appendChild(msgDiv);
+            chatBox.appendChild(rowDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+    </script>
+</body>
+</html>
