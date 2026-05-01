@@ -2,42 +2,35 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Destek AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sistem Hatası: AI-77x</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
     <style>
-        body { font-family: -apple-system, sans-serif; background: #000; color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 90px; scroll-behavior: smooth; }
-        .msg { padding: 10px 15px; border-radius: 18px; max-width: 80%; font-size: 15px; line-height: 1.4; word-wrap: break-word; }
-        /* Kullanıcı Mesajı */
-        .user { background: #262626; align-self: flex-start; border-bottom-left-radius: 2px; }
-        /* Admin (Senin) Mesajın */
-        .admin { background: #007aff; align-self: flex-end; border-bottom-right-radius: 2px; }
-        /* Bot Mesajı */
-        .bot { background: #5856d6; align-self: flex-end; border-bottom-right-radius: 2px; font-style: italic; }
-        
-        .input-bar { position: fixed; bottom: 0; width: 100%; background: #121212; padding: 10px; display: flex; gap: 8px; border-top: 1px solid #333; box-sizing: border-box; }
-        input { flex: 1; padding: 12px; border-radius: 25px; border: none; background: #2c2c2e; color: white; outline: none; }
-        button { background: #007aff; color: white; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; cursor: pointer; }
-        
-        /* Bot Kontrol Butonu (Sadece Sende Görünür) */
-        #botBtn { position: fixed; top: 15px; right: 15px; z-index: 1000; display: none; padding: 8px 12px; border-radius: 12px; border: none; font-weight: bold; color: white; }
+        body { font-family: 'Courier New', monospace; background: #000; color: #0f0; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 100px; }
+        .msg { padding: 12px; border-radius: 10px; max-width: 85%; font-size: 14px; line-height: 1.4; position: relative; border: 1px solid #333; }
+        .user { background: #111; color: #fff; align-self: flex-start; border-left: 3px solid #ff0000; }
+        .admin { background: #001a33; color: #00d2ff; align-self: flex-end; border-right: 3px solid #00d2ff; }
+        .bot { background: #1a001a; color: #ff00ff; align-self: flex-end; border-right: 3px solid #ff00ff; font-style: italic; }
+        .input-bar { position: fixed; bottom: 0; width: 100%; background: #050505; padding: 15px; display: flex; gap: 10px; border-top: 1px solid #0f0; box-sizing: border-box; }
+        input { flex: 1; padding: 12px; border: 1px solid #0f0; background: #000; color: #0f0; outline: none; border-radius: 5px; }
+        button { background: #0f0; color: #000; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 5px; }
+        /* BUTON BURADA - MUTLAKA GÖRÜNECEK */
+        #botBtn { position: fixed; top: 10px; left: 10px; right: 10px; z-index: 9999; display: none; padding: 12px; border: 2px solid #fff; font-weight: bold; text-align: center; cursor: pointer; background: #ff3b30; color: white; border-radius: 8px; }
     </style>
 </head>
 <body>
 
-    <button id="botBtn">BOT: KAPALI</button>
+    <div id="botBtn">OTO-BOT: KAPALI (Tıklayıp Aç)</div>
     <div id="chat"></div>
     
     <div class="input-bar">
-        <input type="text" id="msgInput" placeholder="Sistemle konuşun..." autocomplete="off">
-        <button id="sendBtn">Gönder</button>
+        <input type="text" id="msgInput" placeholder="Sistem komutu girin..." autocomplete="off">
+        <button id="sendBtn">ENTER</button>
     </div>
 
     <script>
-        // SENİN GERÇEK VERİ TABANI BİLGİLERİN
         const firebaseConfig = {
             apiKey: "AIzaSyAW-HC08psjB1ftH-EffGyswLRZ13O8KtY",
             databaseURL: "https://global-chat-fac7a-default-rtdb.firebaseio.com",
@@ -45,35 +38,35 @@
             appId: "1:1058623951778:web:8e71710b3c4482071698fb"
         };
 
-        // Firebase Başlat
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const sohbetRef = db.ref("sohbet_odasi");
-        const botRef = db.ref("bot_aktif_durumu");
+        const botDurumRef = db.ref("bot_aktif_yeni"); // Çakışma olmasın diye ismi değiştirdim
 
-        const isAdmin = window.location.hash === "#admin";
+        const isAdmin = window.location.hash.includes("admin");
         const botBtn = document.getElementById("botBtn");
         const input = document.getElementById("msgInput");
         const chatBox = document.getElementById("chat");
 
-        if(isAdmin) botBtn.style.display = "block";
+        if(isAdmin) {
+            botBtn.style.display = "block";
+            console.log("Admin mod aktif!");
+        }
 
-        // Bot Durumunu Dinle
         let botAktif = false;
-        botRef.on("value", (snap) => {
+        botDurumRef.on("value", (snap) => {
             botAktif = snap.val() || false;
-            botBtn.innerText = botAktif ? "🤖 BOT: AÇIK" : "🤖 BOT: KAPALI";
-            botBtn.style.background = botAktif ? "#34c759" : "#ff3b30";
+            botBtn.innerText = botAktif ? "🤖 OTO-BOT: AKTİF (Kapatmak için tıkla)" : "😴 OTO-BOT: UYUYOR (Açmak için tıkla)";
+            botBtn.style.background = botAktif ? "#4cd964" : "#ff3b30";
         });
 
-        botBtn.onclick = () => botRef.set(!botAktif);
+        botBtn.onclick = () => botDurumRef.set(!botAktif);
 
-        // Mesaj Gönder
-        function send() {
-            const val = input.value.trim();
-            if(val) {
+        function gonder() {
+            const txt = input.value.trim();
+            if(txt) {
                 sohbetRef.push({
-                    text: val,
+                    text: txt,
                     role: isAdmin ? "admin" : "user",
                     time: Date.now()
                 });
@@ -81,34 +74,33 @@
             }
         }
 
-        document.getElementById("sendBtn").onclick = send;
-        input.onkeypress = (e) => { if(e.key === "Enter") send(); };
+        document.getElementById("sendBtn").onclick = gonder;
+        input.onkeypress = (e) => { if(e.key === "Enter") gonder(); };
 
-        // Mesajları Canlı Göster
         sohbetRef.on("child_added", (snap) => {
             const data = snap.val();
             const div = document.createElement("div");
             div.className = "msg " + data.role;
-            div.innerText = data.text;
+            div.innerText = (data.role === "bot" ? "🤖 " : "") + data.text;
             chatBox.appendChild(div);
             chatBox.scrollTop = chatBox.scrollHeight;
 
-            // ZEKİ BOT MANTIĞI: Bot açıksa ve kullanıcı yazdıysa
+            // TROLL BOT CEVAPLARI
             if (botAktif && data.role === "user" && isAdmin) {
                 setTimeout(() => {
-                    const cevaplar = [
-                        "İsteğiniz sistem tarafından analiz ediliyor.(yalan)",
-                        "Şu an yüksek trafik nedeniyle gecikme yaşanıyor.(yalan)",
-                        "Bu bir otomatik yanıttır: Lütfen bekleyiniz.",
-                        "Kullanıcı verileri doğrulanıyor... bu nasıl veri aq.",
-                        "Anlaşılamadı. Tekrar denemeyin."
-                        "amq."
-                        "bilmiyom"
-                        "görüldü"
+                    const trollCevaplar = [
+                        "Düşüncelerini okudum, bu kadar saçma bir şey görmedim.",
+                        "Sistem şu an IQ seviyeni ölçtü: Hata, cihaz desteklemiyor.",
+                        "Cevap verirdim ama vaktim çok değerli, git ötede oyna.",
+                        "Annenin evde olmadığını biliyorum, git çöpü dök.",
+                        "Sistemi hacklemeye çalışma, şu an kamerandan seni izliyorum. (Gülümse)",
+                        "Lütfen ağlamayı kes ve klavyeyi yavaşça yere bırak.",
+                        "Error 404: Muhatap bulunamadı.",
+                        "Şu an başka bir kurbanla ilgileniyorum, sıraya gir."
                     ];
-                    const random = cevaplar[Math.floor(Math.random() * cevaplar.length)];
-                    sohbetRef.push({ text: "[SİSTEM]: " + random, role: "bot" });
-                }, 1500);
+                    const random = trollCevaplar[Math.floor(Math.random() * trollCevaplar.length)];
+                    sohbetRef.push({ text: random, role: "bot" });
+                }, 1800);
             }
         });
     </script>
