@@ -91,7 +91,7 @@
             var data = snap.val();
             var div = document.createElement("div");
             div.className = "msg " + data.role;
-            div.innerText = (data.role === "bot" ? "a. " : "") + data.msg;
+            div.innerText = (data.role === "bot" ? "" : "") + data.msg;
             chatBox.appendChild(div);
             
             // HER YENİ MESAJDA OTOMATİK AŞAĞI KAYDIR
