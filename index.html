@@ -78,9 +78,9 @@
 
             // FOTOĞRAF KONTROLÜ: Eğer mesaj http ile başlıyorsa img etiketi oluştur
             if (data.msg.startsWith("http")) {
-                div.innerHTML = (data.role === "bot" ? "🤖 " : "") + `<img src="${data.msg}" alt="Görsel Yüklenemedi">`;
+                div.innerHTML = (data.role === "bot" ? "" : "") + `<img src="${data.msg}" alt="Görsel Yüklenemedi">`;
             } else {
-                div.innerText = (data.role === "bot" ? "🤖 " : "") + data.msg;
+                div.innerText = (data.role === "bot" ? "" : "") + data.msg;
             }
 
             chatBox.appendChild(div);
@@ -93,9 +93,10 @@
                     setTimeout(function() {
                         var troll = [
                             "Bane.", 
-                            "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueXZ6Znd4Znd4Znd4Znd4Znd4Znd4Znd4Znd4Znd4Znd4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxUqF7NfDZS/giphy.gif", // Örnek Troll GIF
+                            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxPKz8NMxkKOolHfWwcjGEgVWDSZFPT74VMUCq15hRz5PHPJR6wjysVMFD&s=10", // Örnek Troll GIF
                             "Kameran açık kalmış...",
-                            "Seni izliyorum."
+                            "18 cm...",
+                            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxPKz8NMxkKOolHfWwcjGEgVWDSZFPT74VMUCq15hRz5PHPJR6wjysVMFD&s=10    Seni izliyorum."
                         ];
                         var secilen = troll[Math.floor(Math.random() * troll.length)];
                         db.ref("sohbet_odasi").push({
