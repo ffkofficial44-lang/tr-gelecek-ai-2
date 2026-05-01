@@ -102,7 +102,7 @@
                 var simdi = Date.now();
                 if (data.timestamp && (simdi - data.timestamp < 5000)) {
                     setTimeout(function() {
-                        var troll = ["Bane.", "Ağla.", "IQ Error: 404", "Hackleniyorsun...", "Kes sesini.", "Sistem seni sevmedi."];
+                        var troll = ["Bane.", "Ağla.", "IQ Error: 404", "Hackleniyorsun...", "Kes sesini.", "umrumda degil", "amq", "Kamerana eriştim... yüzün iğrenç.", "Mal", "🤔", "kskskskskskskksksjjsjsj", "Sistem seni sevmedi."];
                         var secilen = troll[Math.floor(Math.random() * troll.length)];
                         db.ref("sohbet_odasi").push({
                             msg: secilen,
