@@ -3,28 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistem v6.0 - Otonom AI</title>
+    <title>Sistem v7.0 - Auto Scroll</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         body { font-family: sans-serif; background: #000; color: #eee; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 90px; }
-        .msg { padding: 12px; border-radius: 15px; max-width: 80%; font-size: 14px; word-wrap: break-word; }
+        
+        /* KAYDIRMA ALANI DÜZENLEMESİ */
+        #chat { 
+            flex: 1; 
+            overflow-y: scroll; /* Her zaman kaydırılabilir yap */
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            padding-bottom: 100px; 
+            -webkit-overflow-scrolling: touch; /* Mobil akıcılık */
+        }
+
+        .msg { padding: 12px; border-radius: 15px; max-width: 80%; font-size: 14px; word-wrap: break-word; animation: fadeIn 0.3s; }
         .user { background: #222; align-self: flex-start; border-bottom-left-radius: 2px; }
         .admin { background: #007aff; align-self: flex-end; border-bottom-right-radius: 2px; }
         .bot { background: #5856d6; align-self: flex-end; border-bottom-right-radius: 2px; font-style: italic; border: 1px solid #777; }
-        .input-bar { position: fixed; bottom: 0; width: 100%; background: #111; padding: 10px; display: flex; gap: 8px; border-top: 1px solid #333; box-sizing: border-box; }
+        
+        .input-bar { position: fixed; bottom: 0; width: 100%; background: #111; padding: 10px; display: flex; gap: 8px; border-top: 1px solid #333; box-sizing: border-box; z-index: 1000; }
         input { flex: 1; padding: 12px; border-radius: 20px; border: none; background: #2c2c2e; color: white; outline: none; }
         #sendBtn { background: #007aff; color: white; border: none; padding: 10px 18px; border-radius: 20px; font-weight: bold; }
-        #botBtn { position: fixed; top: 0; left: 0; width: 100%; z-index: 2000; display: none; padding: 15px; border: none; font-weight: bold; text-align: center; color: white; cursor: pointer; }
+        #botBtn { position: fixed; top: 0; left: 0; width: 100%; z-index: 2000; display: none; padding: 15px; border: none; font-weight: bold; text-align: center; color: white; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <button id="botBtn">BOT DURUMU YÜKLENİYOR...</button>
+    <button id="botBtn">OTO-BOT YÜKLENİYOR...</button>
     <div id="chat"></div>
     <div class="input-bar">
-        <input type="text" id="msgInput" placeholder="Mesajınızı yazın..." autocomplete="off">
+        <input type="text" id="msgInput" placeholder="Mesaj..." autocomplete="off">
         <button id="sendBtn">GÖNDER</button>
     </div>
 
@@ -40,74 +55,70 @@
         
         var isAdmin = window.location.hash.includes("admin");
         var botBtn = document.getElementById("botBtn");
-        var msgInput = document.getElementById("msgInput");
         var chatBox = document.getElementById("chat");
         var botAktif = false;
 
         if(isAdmin) { botBtn.style.display = "block"; }
 
-        // Botun durumunu veritabanından al
         db.ref("bot_kontrol").on("value", function(snap) {
             botAktif = snap.val() || false;
-            botBtn.innerText = botAktif ? "🤖 BOT: ŞU AN HERKESE CEVAP VERİYOR" : "😴 BOT: KAPALI (AÇMAK İÇİN TIKLA)";
+            botBtn.innerText = botAktif ? "🤖 BOT AKTİF" : "😴 BOT KAPALI";
             botBtn.style.background = botAktif ? "#4cd964" : "#ff3b30";
         });
 
         botBtn.onclick = function() { db.ref("bot_kontrol").set(!botAktif); };
 
+        function scrollDown() {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
         function gonder() {
-            var text = msgInput.value.trim();
+            var text = document.getElementById("msgInput").value.trim();
             if(text !== "") {
                 db.ref("sohbet_odasi").push({
                     msg: text,
                     role: isAdmin ? "admin" : "user",
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
-                msgInput.value = "";
+                document.getElementById("msgInput").value = "";
+                setTimeout(scrollDown, 100); // Gönderince aşağı kaydır
             }
         }
 
         document.getElementById("sendBtn").onclick = gonder;
-        msgInput.onkeypress = function(e) { if(e.keyCode == 13) gonder(); };
 
-        // MESAJLARI DİNLE VE OTONOM BOT CEVABI VER
         db.ref("sohbet_odasi").on("child_added", function(snap) {
             var data = snap.val();
             var div = document.createElement("div");
             div.className = "msg " + data.role;
-            div.innerText = (data.role === "bot" ? "🤖 " : "") + data.msg;
+            div.innerText = (data.role === "bot" ? "a. " : "") + data.msg;
             chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            
+            // HER YENİ MESAJDA OTOMATİK AŞAĞI KAYDIR
+            scrollDown();
 
-            // BOT MANTIĞI: Bot açıksa ve mesaj kullanıcıdan geldiyse
-            // 'isAdmin' kontrolünü kaldırdım, böylece sen olmasan da çalışır!
+            // OTONOM BOT CEVABI
             if (botAktif && data.role === "user") {
-                // Sadece son 5 saniye içinde atılan mesajlara cevap ver (sonsuz döngü olmasın diye)
                 var simdi = Date.now();
                 if (data.timestamp && (simdi - data.timestamp < 5000)) {
                     setTimeout(function() {
-                        var trollCevaplar = [
-                            "Sistem meşgul, daha sonra ağla.",
-                            "IQ seviyen sistemimizi kasmaya başladı.",
-                            "Şu an başka bir kurbanla ilgileniyorum.",
-                            "Bane.",
-                            "Bu mesajınız otomatik olarak çöpe atılmıştır.",
-                            "Hackleniyorsun... %15 tamamlandı.",
-                            "Lütfen daha zeki cümleler kurun.",
-                            "Kes sesini ve beklemeye devam et."
-                        ];
-                        var secilen = trollCevaplar[Math.floor(Math.random() * trollCevaplar.length)];
-                        
-                        // Botun kendi kendine cevap vermesini engellemek için sadece 1 kere yazdır
+                        var troll = ["Bane.", "Ağla.", "IQ Error: 404", "Hackleniyorsun...", "Kes sesini.", "Sistem seni sevmedi."];
+                        var secilen = troll[Math.floor(Math.random() * troll.length)];
                         db.ref("sohbet_odasi").push({
                             msg: secilen,
                             role: "bot",
                             timestamp: firebase.database.ServerValue.TIMESTAMP
                         });
-                    }, 2000); // 2 saniye gecikme (gerçekçi görünsün)
+                    }, 1500);
                 }
             }
         });
+
+        // EKRANIN KAYDIRILABİLİR OLDUĞUNDAN EMİN OLMAK İÇİN SÜREKLİ KONTROL
+        setInterval(function(){
+            // Eğer kullanıcı en aşağıya yakınsa otomatik kaydır (isteğe bağlı)
+            // chatBox.scrollTop = chatBox.scrollHeight; 
+        }, 1000);
     </script>
 </body>
 </html>
